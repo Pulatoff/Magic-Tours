@@ -26,6 +26,4 @@ app.use('/api/v1/users', userRouter);
 
 app.use(morgan('dev'));
 
-//
-
 module.exports = app;

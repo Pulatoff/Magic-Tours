@@ -8,7 +8,7 @@ const DB = process.env.DATABASE;
 
 const app = require('./app');
 
-const User = require('./User');
+const User = require('./Model/User');
 
 // Database bilan ulash Applicationimizni
 
@@ -16,21 +16,34 @@ const mongoose = require('mongoose');
 
 // MONGOOSE drayverini DATABASE bn ulash
 
-mongoose.connect(DB, () => {
-  console.log('work');
-});
+mongoose.connect(
+  DB,
+  () => {
+    console.log('DATABASE conected');
+  },
+  (e) => {
+    console.log(e);
+  }
+);
+
+// mongoose.set({ autoIndex: false });
 
 // DATABASEga kirib keluvchi maulmotlarni Schemalashtirish
 
 async function run() {
-  const user = new User({ name: 'niyozbek', age: 12, country: 'UZB' });
+  const data = {
+    firstName: 'Niyozbek',
+    lastName: 'Pulatov',
+    age: 18,
+  };
+  const user = new User(data);
   await user.save();
   console.log(user);
 }
 
-run();
+// run();
 
-// ======= Serverni ishlashi =========
+// ++==--**= Serverni ishlashi =**--==++
 
 const port = dotenv.PORT || 8000;
 app.listen(port, dotenv.URL);
