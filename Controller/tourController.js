@@ -2,12 +2,32 @@ const Tour = require('../Model/tourModel');
 
 async function getToursAll(req, res) {
   try {
-    const data = await Tour.find();
+    const query = { ...req.query };
+    const removeQuery = ['sort', 'page', 'limit', 'field'];
+    removeQuery.forEach((val) => delete query[val]);
+
+    const queryStr = JSON.stringify(query)
+      .replace(/\bgt\b/g, '$gt')
+      .replace(/\bgte\b/g, '$gte')
+      .replace(/\blt\b/g, '$lt')
+      .replace(/\blte\b/g, '$lte');
+    console.log(queryStr);
+    const data = Tour.find(JSON.parse(queryStr));
+    if (req.query.sort) {
+      const querySort = req.query.sort.split(',').join(' ');
+      console.log(querySort);
+      data = data.sort(querySort);
+    }
+
+    const queryData = await data;
+    console.log(queryData);
+    if (!data.length) throw new Error('Error');
     res.status(200).json({
       status: 'success',
-      data: data,
+      data: queryData,
     });
   } catch (e) {
+    console.log(e);
     res.status(404).json({
       status: 'fail',
       message: 'invalid data',
