@@ -2,45 +2,60 @@ const Tour = require('../Model/tourModel');
 
 async function getToursAll(req, res) {
   try {
-    const query = { ...req.query };
-    const removeQuery = ['sort', 'page', 'limit', 'field'];
-    removeQuery.forEach((val) => delete query[val]);
-    // 1 Filtering
-    const queryStr = JSON.stringify(query)
-      .replace(/\bgt\b/g, '$gt')
-      .replace(/\bgte\b/g, '$gte')
-      .replace(/\blt\b/g, '$lt')
-      .replace(/\blte\b/g, '$lte');
-    let data = Tour.find(JSON.parse(queryStr));
-
-    // 2 Sorting
-    if (req.query.sort) {
-      const querySort = req.query.sort.split(',').join(' ');
-      data = data.sort(querySort);
+    class APIFeatures {
+      constructor(surov, surovUrl) {
+        this.surov = surov;
+        this.surovUrl = surovUrl;
+      }
+      filter() {
+        const query = { ...this.surovUrl };
+        const removeQuery = ['sort', 'page', 'limit', 'field'];
+        removeQuery.forEach((val) => delete query[val]);
+        const queryStr = JSON.stringify(query)
+          .replace(/\bgt\b/g, '$gt')
+          .replace(/\bgte\b/g, '$gte')
+          .replace(/\blt\b/g, '$lt')
+          .replace(/\blte\b/g, '$lte');
+        this.surov.find(JSON.parse(queryStr));
+        return this;
+      }
+      sort() {
+        if (this.surovUrl.sort) {
+          const querySort = this.surovUrl.sort.split(',').join(' ');
+          this.surov.sort(querySort);
+          return this;
+        }
+      }
     }
+
+    // 1 Filtering
+
+    let data = new APIFeatures(Tour, req.query).filter().sort();
+    // 2 Sorting
 
     // 3 Field
 
-    if (req.query.field) {
-      const queryField = req.query.field.split(',').join(' ');
-      data = data.select(queryField);
-    } else {
-      data = data.select('-__v');
-    }
+    // if (req.query.field) {
+    //   const queryField = req.query.field.split(',').join(' ');
+    //   data = data.select(queryField);
+    // } else {
+    //   data = data.select('-__v');
+    // }
 
     // 4 Pagination
-    const page = req.query.page * 1 || 1;
-    const limit = req.query.limit * 1 || 3;
-    const skip = (page - 1) * limit;
-    data = data.skip(skip).limit(limit);
 
-    const queryData = await data;
-    if (req.query.page) {
-      const numberOfDocument = await Tour.countDocuments();
-      if (numberOfDocument <= skip) {
-        throw new Error('this page doesnt Exsist');
-      }
-    }
+    // const page = req.query.page * 1 || 1;
+    // const limit = req.query.limit * 1 || 3;
+    // const skip = (page - 1) * limit;
+    // data = data.skip(skip).limit(limit);
+
+    const queryData = await data.surov;
+    // if (req.query.page) {
+    //   const numberOfDocument = await Tour.countDocuments();
+    //   if (numberOfDocument <= skip) {
+    //     throw new Error('this page doesnt Exsist');
+    //   }
+    // }
 
     if (!queryData.length) throw new Error('Error');
     res.status(200).json({
@@ -48,6 +63,7 @@ async function getToursAll(req, res) {
       data: queryData,
     });
   } catch (e) {
+    console.log(e);
     res.status(404).json({
       status: 'fail',
       message: e.message,
