@@ -5,32 +5,52 @@ async function getToursAll(req, res) {
     const query = { ...req.query };
     const removeQuery = ['sort', 'page', 'limit', 'field'];
     removeQuery.forEach((val) => delete query[val]);
-
+    // 1 Filtering
     const queryStr = JSON.stringify(query)
       .replace(/\bgt\b/g, '$gt')
       .replace(/\bgte\b/g, '$gte')
       .replace(/\blt\b/g, '$lt')
       .replace(/\blte\b/g, '$lte');
-    console.log(queryStr);
-    const data = Tour.find(JSON.parse(queryStr));
+    let data = Tour.find(JSON.parse(queryStr));
+
+    // 2 Sorting
     if (req.query.sort) {
       const querySort = req.query.sort.split(',').join(' ');
-      console.log(querySort);
       data = data.sort(querySort);
     }
 
+    // 3 Field
+
+    if (req.query.field) {
+      const queryField = req.query.field.split(',').join(' ');
+      data = data.select(queryField);
+    } else {
+      data = data.select('-__v');
+    }
+
+    // 4 Pagination
+    const page = req.query.page * 1 || 1;
+    const limit = req.query.limit * 1 || 3;
+    const skip = (page - 1) * limit;
+    data = data.skip(skip).limit(limit);
+
     const queryData = await data;
-    console.log(queryData);
-    if (!data.length) throw new Error('Error');
+    if (req.query.page) {
+      const numberOfDocument = await Tour.countDocuments();
+      if (numberOfDocument <= skip) {
+        throw new Error('this page doesnt Exsist');
+      }
+    }
+
+    if (!queryData.length) throw new Error('Error');
     res.status(200).json({
       status: 'success',
       data: queryData,
     });
   } catch (e) {
-    console.log(e);
     res.status(404).json({
       status: 'fail',
-      message: 'invalid data',
+      message: e.message,
     });
   }
 }
