@@ -1,10 +1,13 @@
-const fs = require('fs');
 const express = require('express');
 const tourController = require('../Controller/tourController');
 
 const app = express();
 
 const tourRouter = express.Router();
+
+tourRouter.route('/best-3-tours').get(tourController.getToursAll);
+
+tourRouter.route('/stat').get(tourController.stats);
 
 tourRouter
   .route('/')

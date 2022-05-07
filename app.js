@@ -17,6 +17,14 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use((req, res, next) => {
+  if (req.path === '/api/v1/tours/best-3-tours') {
+    req.query.sort = '-ratingsAverage';
+    req.query.limit = 3;
+  }
+  next();
+});
+
 // Static File Middleware
 
 app.use(express.static(`${__dirname}/public`));

@@ -1,55 +1,18 @@
 const Tour = require('../Model/tourModel');
+const APIFeatures = require('../helper/APIFeatures');
+const res = require('express/lib/response');
 
 async function getToursAll(req, res) {
   try {
     // API ustunliklari
-    class APIFeatures {
-      constructor(surov, surovUrl) {
-        this.surov = surov;
-        this.surovUrl = surovUrl;
-      }
-      filter() {
-        const query = { ...this.surovUrl };
-        const removeQuery = ['sort', 'page', 'limit', 'field'];
-        removeQuery.forEach((val) => delete query[val]);
-        const queryStr = JSON.stringify(query)
-          .replace(/\bgt\b/g, '$gt')
-          .replace(/\bgte\b/g, '$gte')
-          .replace(/\blt\b/g, '$lt')
-          .replace(/\blte\b/g, '$lte');
-        this.surov = this.surov.find(JSON.parse(queryStr));
-        return this;
-      }
-      sort() {
-        if (this.surovUrl.sort) {
-          const querySort = this.surovUrl.sort.split(',').join(' ');
-          this.surov = this.surov.sort(querySort);
-        }
-        return this;
-      }
-      field() {
-        if (this.surovUrl.field) {
-          const queryField = this.surovUrl.field.split(',').join(' ');
-          this.surov = this.surov.select(queryField);
-        } else {
-          this.surov = this.surov.select('-__v');
-        }
-        return this;
-      }
-      pagination() {
-        const page = this.surovUrl.page * 1 || 1;
-        const limit = this.surovUrl.limit * 1 || 3;
-        const skip = (page - 1) * limit;
-        this.surov = this.surov.skip(skip).limit(limit);
-        return this;
-      }
-    }
 
     let data = new APIFeatures(Tour, req.query)
       .filter()
       .sort()
       .pagination()
       .field();
+
+    // Limited found
 
     if (req.query.page) {
       const numberOfDocument = await Tour.countDocuments();
@@ -136,6 +99,33 @@ async function getByIdTour(req, res) {
   }
 }
 
+async function stats(req, res) {
+  try {
+    const data = await Tour.aggregate([
+      {
+        $match: { difficulty: 'medium' },
+      },
+      { $group: { _id: {}, averagePrice: { $avg: '$price' } } },
+    ]);
+    res.status(200).json({
+      status: 'success',
+      data: data,
+    });
+  } catch (e) {
+    console.log(e);
+    res.status(404).json({
+      status: 'failed',
+    });
+  }
+}
+
 // Export functions
 
-module.exports = { getToursAll, addTour, updateTour, deleteTour, getByIdTour };
+module.exports = {
+  getToursAll,
+  addTour,
+  updateTour,
+  deleteTour,
+  getByIdTour,
+  stats,
+};
